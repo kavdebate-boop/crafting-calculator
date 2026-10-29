@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crafting Calculator</title>
+<style>
+:root{--bg:#eceee8;--panel:#f8f9f5;--ink:#1c2321;--mute:#5d6862;--line:#cfd5cc;--acc:#2b7a68;--accink:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121718;--panel:#1b2224;--ink:#e3eae5;--mute:#93a099;--line:#2f3a3c;--acc:#6fcfb8;--accink:#0d1513;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121718;--panel:#1b2224;--ink:#e3eae5;--mute:#93a099;--line:#2f3a3c;--acc:#6fcfb8;--accink:#0d1513;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.6rem;margin:0 0 4px;letter-spacing:-.01em}
+p.sub{margin:0 0 20px;color:var(--mute)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+section{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+h2{font-size:1.05rem;margin:0 0 10px}
+input,select,button{font:inherit;color:inherit}
+input,select{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+button{background:var(--acc);color:var(--accink);border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:600}
+button.ghost{background:transparent;color:var(--mute);border:1px solid var(--line);font-weight:500}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:8px;margin-bottom:8px}
+.row select{flex:1}
+.row input[type=number]{width:84px}
+.recipe{font-size:.9rem;color:var(--mute);margin:4px 0 12px;min-height:1.3em}
+ul{list-style:none;margin:0;padding:0}
+li.ord{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+li.ord span.n{flex:1}
+li.ord input{width:72px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:6px 4px;border-top:1px solid var(--line);text-align:left}
+th{border-top:0;color:var(--mute);font-weight:500;font-size:.85rem}
+td.q,th.q{text-align:right;font-variant-numeric:tabular-nums}
+.tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.tools label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.empty{color:var(--mute)}
+.craft{color:var(--mute);font-size:.85rem}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><div><h1>Crafting Calculator</h1><p class="sub">Pick an item, set how many you want, and get the full materials list.</p></div><button class="ghost" id="theme" type="button">Theme</button></div>
+<div class="grid">
+<section>
+<h2>Add to order</h2>
+<input id="search" type="search" placeholder="Search items" style="width:100%;margin-bottom:8px" aria-label="Search items">
+<div class="row"><select id="item" aria-label="Item"></select><input id="qty" type="number" min="1" value="1" aria-label="Quantity"></div>
+<div class="recipe" id="recipe"></div>
+<button id="add" type="button">Add to order</button>
+<h2 style="margin-top:18px">Your order</h2>
+<ul id="order"></ul>
+<button class="ghost" id="clear" type="button" style="margin-top:10px">Clear order</button>
+</section>
+<section>
+<h2>Materials needed</h2>
+<div class="tools">
+<label><input type="checkbox" id="raw" checked> Break down crafted parts to raw materials</label>
+<button class="ghost" id="copy" type="button">Copy list</button>
+</div>
+<div id="mats"></div>
+</section>
+</div>
+</main>
+<script>
+const RAW=`Weapons|SNS Pistol|1|SNS BP:1,Metal Scrap:30
+Weapons|Machine Pistol|1|MP BP:1,Metal Scrap:100,Heavy Weapon Parts:5
+Weapons|Heavy Pistol|1|Heavy BP:1,Metal Scrap:50
+Weapons|Ceramic Pistol|1|Ceramic BP:1,Metal Scrap:40
+Weapons|SP45|1|SP45 BP:1,Metal Scrap:75,Heavy Weapon Parts:10
+Weapons|Pistol .50|1|Pistol .50 BP:1,Metal Scrap:100,Heavy Weapon Parts:10
+Weapons|Micro SMG|1|Micro SMG BP:1,Metal Scrap:100,Heavy Weapon Parts:5
+Weapons|Gusenberg|1|Gusenberg BP:1,Metal Scrap:100,Heavy Weapon Parts:10
+Weapons|Heavy Weapon Parts|1|Weapon Parts:10
+Automatic|Automatic Pistol|1|AP Blueprint:1,Heavy Weapon Parts:5,Iron Ingot:100,Plastic:25,Steel:100
+Automatic|SMG|1|SMG BP:1,Heavy Weapon Parts:15,Iron Ingot:150,Plastic:50,Steel:150
+Attachments|Extended Clip|1|Extended Clip BP:1,Metal Scrap:75,Plastic:100
+Attachments|Suppressor|1|Suppressor BP:1,Metal Scrap:75,Rubber:100
+Gunpowder|Advanced Lockpick|2|Lockpick:3,Plastic:5
+Gunpowder|C4 Explosive|1|Electronic Wire:20,Gunpowder:75,Metal Scrap:20
+Gunpowder|Gunpowder|2|Coal:1,Sulfur:1
+Gunpowder|Metal Drill/Cutter|1|Electronic Kit:1,Iron Ingot:15,Plastic:30
+Gunpowder|Small C4 (Bank Truck)|1|Electronic Wire:10,Gunpowder:50,Metal Scrap:10
+Gunpowder|Thermite|1|Electronic Wire:10,Gunpowder:50,Metal Scrap:10
+Ammo|.45 ACP|4|Copper Ingot:2,Gunpowder:2
+Ammo|.50 AE|8|Copper Ingot:5,Gunpowder:5
+Ammo|12 Gauge|5|Copper Ingot:3,Gunpowder:3
+Crafting|Blueprint Paper|1|Blue Dye:10,Paper:30
+Crafting|Paper|2|Wood Planks:1
+Crafting|Refined Metal|1|Metal Scrap:1,Metal Finishing:1
+Crafting|Refined Steel|1|Iron Ingot:1,Steel:1
+Crafting|Refined Wood|1|Wood Planks:1,Wood Finishing:1
+Boosting|Aqua Pendrive|1|Electric Wire:3,Metal Scrap:10,Plastic:25
+Boosting|Blue Pendrive|1|Electric Wire:1,Metal Scrap:5,Plastic:20
+Boosting|Green Pendrive|1|Electric Wire:1,Metal Scrap:5,Plastic:20
+Boosting|Blowtorch|1|Refined Steel:15,Jerry Can:1
+Boosting|Bolt Cutter|1|Refined Metal:10,Refined Steel:15
+Meth|Lab Kit|1|Cloth:20,Glass:50,Plastic:20,Wood Planks:75
+Meth|Low Grade Cooker|1|Aluminum:50,Metal Scrap:25,Steel:50
+Meth|Low Grade Meth Cooler|1|Aluminum:50,Metal Scrap:25,Steel:50
+Meth|Rubber Hose|1|Plastic:30,Rubber:50
+Coke|Drying Rack|1|Cloth:20,Plastic:20,Wood Planks:50
+Coke|Mixing Container|1|Aluminum:10,Plastic:30,Rubber:10
+Coke|Smelting Furnace|1|Aluminum:30,Steel:30`;
+const BENCH={Weapons:"Weapons bench",Automatic:"Automatic bench",Attachments:"Attachments bench",Gunpowder:"Gunpowder bench",Ammo:"Ammo bench",Crafting:"Crafting bench",Boosting:"Boosting bench",Meth:"Meth drug bench",Coke:"Coke drug bench"};
+const R={};
+RAW.split("\n").forEach(l=>{const [b,n,y,ing]=l.split("|");R[n]={bench:b,yield:+y,ing:ing.split(",").map(s=>{const i=s.lastIndexOf(":");return [s.slice(0,i),+s.slice(i+1)]})}});
+const $=id=>document.getElementById(id);
+let order=[];
+try{const s=localStorage.getItem("craft-order");if(s)order=JSON.parse(s).filter(o=>R[o.name])}catch(e){}
+function save(){try{localStorage.setItem("craft-order",JSON.stringify(order))}catch(e){}}
+function fill(){
+  const q=$("search").value.trim().toLowerCase(),cur=$("item").value;let h="";
+  Object.keys(BENCH).forEach(b=>{
+    const names=Object.keys(R).filter(n=>R[n].bench===b&&n.toLowerCase().includes(q));
+    if(names.length)h+=`<optgroup label="${BENCH[b]}">`+names.map(n=>`<option>${n}</option>`).join("")+"</optgroup>";
+  });
+  $("item").innerHTML=h||"<option disabled>No matches</option>";
+  if([...$("item").options].some(o=>o.value===cur))$("item").value=cur;
+  showRecipe();
+}
+function showRecipe(){
+  const r=R[$("item").value];
+  $("recipe").textContent=r?`Makes ${r.yield} per craft: `+r.ing.map(([n,a])=>`${a} ${n}`).join(", "):"";
+}
+function calc(){
+  const mats={},crafts={};
+  order.forEach(o=>{const r=R[o.name],c=Math.ceil(o.qty/r.yield);crafts[o.name]=(crafts[o.name]||0)+c;r.ing.forEach(([n,a])=>mats[n]=(mats[n]||0)+a*c)});
+  if($("raw").checked){
+    Object.keys(mats).filter(n=>R[n]).forEach(n=>{
+      const r=R[n],need=mats[n],c=Math.ceil(need/r.yield);delete mats[n];
+      r.ing.forEach(([m,a])=>mats[m]=(mats[m]||0)+a*c);
+    });
+  }
+  return mats;
+}
+function render(){
+  $("order").innerHTML=order.length?order.map((o,i)=>`<li class="ord"><span class="n">${o.name}</span><input type="number" min="1" value="${o.qty}" data-i="${i}" aria-label="Quantity of ${o.name}"><button class="ghost" data-rm="${i}" type="button" aria-label="Remove ${o.name}">Remove</button></li>`).join(""):'<li class="empty">Nothing yet. Add an item to start.</li>';
+  const m=calc(),keys=Object.keys(m).sort((a,b)=>a.localeCompare(b));
+  $("mats").innerHTML=keys.length?`<table><tr><th>Material</th><th class="q">Amount</th></tr>${keys.map(k=>`<tr><td>${k}</td><td class="q">${m[k].toLocaleString()}</td></tr>`).join("")}</table>`:'<p class="empty">Your materials list will show up here.</p>';
+  const cr=order.filter(o=>R[o.name].yield>1);
+  if(cr.length)$("mats").innerHTML+=`<p class="craft">Crafts are rounded up, since some recipes make several at once (${cr.map(o=>o.name+" makes "+R[o.name].yield).join(", ")}).</p>`;
+  save();
+}
+$("search").oninput=fill;
+$("item").onchange=showRecipe;
+$("add").onclick=()=>{
+  const name=$("item").value,qty=Math.max(1,parseInt($("qty").value)||1);
+  if(!R[name])return;
+  const e=order.find(o=>o.name===name);
+  if(e)e.qty+=qty;else order.push({name,qty});
+  render();
+};
+$("order").onchange=e=>{const i=e.target.dataset.i;if(i!=null){order[i].qty=Math.max(1,parseInt(e.target.value)||1);render()}};
+$("order").onclick=e=>{const i=e.target.dataset.rm;if(i!=null){order.splice(i,1);render()}};
+$("clear").onclick=()=>{order=[];render()};
+$("raw").onchange=render;
+$("copy").onclick=async()=>{
+  const m=calc(),t=Object.keys(m).sort().map(k=>`${k}: ${m[k]}`).join("\n");
+  try{await navigator.clipboard.writeText(t);$("copy").textContent="Copied"}catch(e){$("copy").textContent="Copy failed"}
+  setTimeout(()=>$("copy").textContent="Copy list",1500);
+};
+$("theme").onclick=()=>{
+  const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
+  r.dataset.theme=dark?"light":"dark";
+};
+fill();render();
+</script>
+</body>
+</html>
