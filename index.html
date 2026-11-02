@@ -105,7 +105,11 @@ Meth|Low Grade Meth Cooler|1|Aluminum:50,Metal Scrap:25,Steel:50
 Meth|Rubber Hose|1|Plastic:30,Rubber:50
 Coke|Drying Rack|1|Cloth:20,Plastic:20,Wood Planks:50
 Coke|Mixing Container|1|Aluminum:10,Plastic:30,Rubber:10
-Coke|Smelting Furnace|1|Aluminum:30,Steel:30`;
+Coke|Smelting Furnace|1|Aluminum:30,Steel:30
+Boosting|KM MicroSD|1|Electronic Wire:20,Metal Scrap:30,Plastic:30
+Boosting|IM MicroSD|1|Electronic Wire:20,Metal Scrap:15,Plastic:25
+Attachments|Extended Clip BP|1|Binding Paste:15,Blueprint Paper:1,Coal:10
+Attachments|Suppressor BP|1|Binding Paste:15,Blueprint Paper:1,Coal:10`;
 const BENCH={Weapons:"Weapons bench",Automatic:"Automatic bench",Attachments:"Attachments bench",Gunpowder:"Gunpowder bench",Ammo:"Ammo bench",Crafting:"Crafting bench",Boosting:"Boosting bench",Meth:"Meth drug bench",Coke:"Coke drug bench"};
 const R={};
 RAW.split("\n").forEach(l=>{const [b,n,y,ing]=l.split("|");R[n]={bench:b,yield:+y,ing:ing.split(",").map(s=>{const i=s.lastIndexOf(":");return [s.slice(0,i),+s.slice(i+1)]})}});
@@ -131,10 +135,15 @@ function calc(){
   const mats={},crafts={};
   order.forEach(o=>{const r=R[o.name],c=Math.ceil(o.qty/r.yield);crafts[o.name]=(crafts[o.name]||0)+c;r.ing.forEach(([n,a])=>mats[n]=(mats[n]||0)+a*c)});
   if($("raw").checked){
-    Object.keys(mats).filter(n=>R[n]).forEach(n=>{
-      const r=R[n],need=mats[n],c=Math.ceil(need/r.yield);delete mats[n];
-      r.ing.forEach(([m,a])=>mats[m]=(mats[m]||0)+a*c);
-    });
+    let again=true,guard=0;
+    while(again&&guard++<10){
+      again=false;
+      Object.keys(mats).filter(n=>R[n]).forEach(n=>{
+        const r=R[n],c=Math.ceil(mats[n]/r.yield);delete mats[n];
+        r.ing.forEach(([m,a])=>mats[m]=(mats[m]||0)+a*c);
+        again=true;
+      });
+    }
   }
   return mats;
 }
