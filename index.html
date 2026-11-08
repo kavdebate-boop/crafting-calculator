@@ -109,8 +109,10 @@ Coke|Smelting Furnace|1|Aluminum:30,Steel:30
 Boosting|KM MicroSD|1|Electronic Wire:20,Metal Scrap:30,Plastic:30
 Boosting|IM MicroSD|1|Electronic Wire:20,Metal Scrap:15,Plastic:25
 Attachments|Extended Clip BP|1|Binding Paste:15,Blueprint Paper:1,Coal:10
-Attachments|Suppressor BP|1|Binding Paste:15,Blueprint Paper:1,Coal:10`;
-const BENCH={Weapons:"Weapons bench",Automatic:"Automatic bench",Attachments:"Attachments bench",Gunpowder:"Gunpowder bench",Ammo:"Ammo bench",Crafting:"Crafting bench",Boosting:"Boosting bench",Meth:"Meth drug bench",Coke:"Coke drug bench"};
+Attachments|Suppressor BP|1|Binding Paste:15,Blueprint Paper:1,Coal:10
+Rifle|Assault Rifle|1|Assault Rifle Receiver:1,Assault Rifle BP:1,Heavy Weapon Parts:30,Metal Scrap:100
+Rifle|Compact Rifle|1|Assault Rifle Receiver:1,Compact Rifle BP:1,Heavy Weapon Parts:20,Metal Scrap:100`;
+const BENCH={Weapons:"Weapons bench",Automatic:"Automatic bench",Attachments:"Attachments bench",Gunpowder:"Gunpowder bench",Ammo:"Ammo bench",Crafting:"Crafting bench",Boosting:"Boosting bench",Meth:"Meth drug bench",Coke:"Coke drug bench",Coke:"Coke drug bench",Rifle:"Rifle bench"};
 const R={};
 RAW.split("\n").forEach(l=>{const [b,n,y,ing]=l.split("|");R[n]={bench:b,yield:+y,ing:ing.split(",").map(s=>{const i=s.lastIndexOf(":");return [s.slice(0,i),+s.slice(i+1)]})}});
 const $=id=>document.getElementById(id);
